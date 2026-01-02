@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Clone Wars Quotes</title>
+  <meta name="description" content="Random Star Wars: The Clone Wars opening quote generator." />
+  <meta name="color-scheme" content="dark light" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="bg" aria-hidden="true"></div>
+
+  <header class="wrap header">
+    <div class="brand">
+      <div class="dot" aria-hidden="true"></div>
+      <div>
+        <h1>Clone Wars Quotes</h1>
+        <p class="sub">Random opening quote, spaced out and shareable.</p>
+      </div>
+    </div>
+
+    <div class="controls">
+      <label class="select">
+        <span class="label">Season</span>
+        <select id="seasonSelect" aria-label="Season filter"></select>
+      </label>
+
+      <button id="btnRandom" class="btn primary" type="button" title="Spacebar works too">
+        Another quote
+      </button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="card" aria-live="polite">
+      <div class="meta">
+        <span id="metaEpisode" class="metaEpisode">—</span>
+        <span class="pill" id="pillSeason">Season —</span>
+      </div>
+
+      <div class="quoteBlock">
+        <div class="quoteMark" aria-hidden="true">“</div>
+        <p id="quoteText" class="quoteText">Loading…</p>
+      </div>
+
+      <div class="formatted">
+        <div class="formattedLabel">Formatted</div>
+        <pre id="formattedLine" class="formattedLine">—</pre>
+      </div>
+
+      <div class="actions">
+        <button id="btnCopy" class="btn" type="button">Copy</button>
+        <button id="btnLink" class="btn" type="button">Copy link</button>
+        <span id="toast" class="toast" role="status" aria-live="polite"></span>
+      </div>
+
+      <footer class="fineprint">
+        Tip: press <kbd>Space</kbd> for a new quote.
+      </footer>
+    </section>
+  </main>
+
+  <script src="./script.js"></script>
+</body>
+</html>
