@@ -1,5 +1,5 @@
-/* Clone Wars opening quotes — parsed from RAW lines.
-   Random selection excludes episodes where the quote is "No opening quote". */
+/* Random Clone Wars opening quote generator (minimal UI).
+   Episodes that say "No opening quote" are excluded from random selection. */
 
 const RAW = `
 01×01 – Ambush:  Great leaders inspire greatness in others.
@@ -143,16 +143,10 @@ const RAW = `
 07×12 – Victory and Death: No opening quote
 `;
 
-function slugify(s) {
-  return s.toLowerCase()
-    .replace(/[’']/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
 function parseEpisodes(raw) {
   const lines = raw.split("\n").map(l => l.trim()).filter(Boolean);
   const out = [];
+
   for (const line of lines) {
     const m = line.match(/^(\d{2})×(\d{2})\s+–\s+(.+?):\s*(.+)$/);
     if (!m) continue;
@@ -161,17 +155,17 @@ function parseEpisodes(raw) {
     const episode = Number(m[2]);
     const title = m[3].trim();
     const quoteRaw = m[4].trim().replace(/\s+/g, " ");
-    const hasQuote = !(quoteRaw.toLowerCase() === "no opening quote");
+    const hasQuote = quoteRaw.toLowerCase() !== "no opening quote";
 
     out.push({
       season,
       episode,
       codePretty: `${m[1]}×${m[2]}`,
-      key: `${m[1]}x${m[2]}`, // safe for URL/hash
       title,
       quote: hasQuote ? quoteRaw : null
     });
   }
+
   return out;
 }
 
@@ -182,21 +176,10 @@ const els = {
   metaEpisode: document.getElementById("metaEpisode"),
   pillSeason: document.getElementById("pillSeason"),
   quoteText: document.getElementById("quoteText"),
-  formattedLine: document.getElementById("formattedLine"),
   btnRandom: document.getElementById("btnRandom"),
-  btnCopy: document.getElementById("btnCopy"),
-  btnLink: document.getElementById("btnLink"),
-  toast: document.getElementById("toast"),
 };
 
 let current = null;
-
-function setToast(msg) {
-  els.toast.textContent = msg;
-  if (!msg) return;
-  window.clearTimeout(setToast._t);
-  setToast._t = window.setTimeout(() => (els.toast.textContent = ""), 1400);
-}
 
 function filteredPool() {
   const s = els.seasonSelect.value;
@@ -204,47 +187,25 @@ function filteredPool() {
   return EPISODES.filter(e => e.quote && (wantSeason === null || e.season === wantSeason));
 }
 
-function formatLine(e) {
-  return `${e.codePretty} – ${e.title}: ${e.quote}`;
-}
-
-function render(e, {updateHash = true} = {}) {
+function render(e) {
   current = e;
-
   els.metaEpisode.textContent = `${e.codePretty} – ${e.title}`;
   els.pillSeason.textContent = `Season ${String(e.season).padStart(2, "0")}`;
   els.quoteText.textContent = e.quote;
-  els.formattedLine.textContent = formatLine(e);
-
-  if (updateHash) {
-    const hash = `${e.key}-${slugify(e.title)}`;
-    history.replaceState(null, "", `#${hash}`);
-  }
 }
 
 function randomPick() {
   const pool = filteredPool();
   if (!pool.length) return null;
-
   if (pool.length === 1) return pool[0];
 
   let next = pool[Math.floor(Math.random() * pool.length)];
-  // avoid repeats when possible
   if (current) {
-    for (let i = 0; i < 6 && next.key === current.key; i++) {
+    for (let i = 0; i < 6 && next.codePretty === current.codePretty; i++) {
       next = pool[Math.floor(Math.random() * pool.length)];
     }
   }
   return next;
-}
-
-function pickFromHash() {
-  const h = (location.hash || "").replace(/^#/, "").trim();
-  if (!h) return null;
-
-  const key = h.split("-")[0]; // "01x01"
-  const match = EPISODES.find(e => e.key === key && e.quote);
-  return match || null;
 }
 
 function buildSeasonSelect() {
@@ -264,35 +225,11 @@ function buildSeasonSelect() {
   }
 }
 
-async function copyText(text) {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    // fallback
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    ta.style.position = "fixed";
-    ta.style.opacity = "0";
-    document.body.appendChild(ta);
-    ta.select();
-    try {
-      document.execCommand("copy");
-      document.body.removeChild(ta);
-      return true;
-    } catch {
-      document.body.removeChild(ta);
-      return false;
-    }
-  }
-}
-
 function boot() {
   buildSeasonSelect();
 
-  // initial selection: hash -> random
-  const fromHash = pickFromHash();
-  render(fromHash || randomPick(), { updateHash: !fromHash });
+  const first = randomPick();
+  if (first) render(first);
 
   els.btnRandom.addEventListener("click", () => {
     const next = randomPick();
@@ -302,31 +239,6 @@ function boot() {
   els.seasonSelect.addEventListener("change", () => {
     const next = randomPick();
     if (next) render(next);
-  });
-
-  els.btnCopy.addEventListener("click", async () => {
-    if (!current) return;
-    const ok = await copyText(formatLine(current));
-    setToast(ok ? "Copied." : "Couldn’t copy.");
-  });
-
-  els.btnLink.addEventListener("click", async () => {
-    const url = location.href;
-    const ok = await copyText(url);
-    setToast(ok ? "Link copied." : "Couldn’t copy link.");
-  });
-
-  window.addEventListener("hashchange", () => {
-    const e = pickFromHash();
-    if (e) render(e, { updateHash: false });
-  });
-
-  document.addEventListener("keydown", (ev) => {
-    if (ev.code === "Space" && !/input|textarea|select/i.test(document.activeElement?.tagName || "")) {
-      ev.preventDefault();
-      const next = randomPick();
-      if (next) render(next);
-    }
   });
 }
 
